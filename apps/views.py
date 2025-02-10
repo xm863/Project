@@ -9,13 +9,32 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from .mixins import NotLoginRequiredMixin
 from .forms import UserCreateForm, UserLoginForm, CommentForm
-from.models import Users, Comment
+from.models import Users, Comment, New
 from django.contrib.auth import login, logout
+import random
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 BOT_TOKEN = "7973924292:AAFEkXC8ok-8D2MHnS61yOEG0yUFUEi4BMQ"
 
-class IndexView(TemplateView):
+class IndexView(ListView):
+    model = Food
     template_name = 'index.html'    
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+
+        category_food = {}
+
+        for category in Categories.objects.all():
+            foods = Food.objects.filter(category=category)  
+            if foods.exists():
+                category_food[category.id] = random.choice(list(foods))
+        
+        context['food'] = category_food.values() 
+        context['category'] = Categories.objects.all()
+        return context
+    
 class MenuView(ListView):
     model = Food
     template_name = 'menu.html'
@@ -27,7 +46,6 @@ class MenuView(ListView):
         context['food'] = food
         context['category'] = categories
         return context
-
 
 class ContactView(TemplateView):
     template_name = 'contact.html'
@@ -74,30 +92,43 @@ class NewsView(ListView):
 class NewsDetailView(DetailView):
     model = New
     template_name = 'news-detail.html'
+    context_object_name = 'news'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         news = self.get_object()
-        context['theme'] = Theme.objects.all()
-        context['comments'] = Comment.objects.all()
+        context['comments'] = Comment.objects.filter(news=news)
         context['form'] = CommentForm()
         return context
 
     def post(self, request, *args, **kwargs):
         news = self.get_object()
         form = CommentForm(request.POST)
+
         if form.is_valid():
             comment = form.save(commit=False)
             comment.news = news
-            if request.user.is_authenticated:
-                comment.user = request.user
-            else:
-                comment.user = Users.objects.get(username="Anonymous")  
+            comment.user = request.user
             comment.save()
             return redirect('news-detail', pk=news.pk)
+
         return self.get(request, *args, **kwargs)
 
-    
+@login_required
+@require_POST
+def comment_view(request, news_id):
+    news = get_object_or_404(New, id=news_id)
+    form = CommentForm(request.POST)
+
+    if form.is_valid():
+        Comment.objects.create(
+            news=news,
+            user=request.user,
+            comment=form.cleaned_data['comment']
+        )
+
+    return redirect('news-detail', pk=news.id)
+
 class UserCreateView(NotLoginRequiredMixin, CreateView):
     model = Users
     form_class = UserCreateForm

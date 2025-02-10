@@ -35,39 +35,51 @@
         </section>
 
         <section class="comments section-padding">
-                <div class="container">
-                    <div class="row">
-
-                        <div class="col-12">
-                            <h4 class="text-center mb-4">Comment Box</h4>
-                        </div>
-
-                        <div class="col-lg-7 col-12 mx-auto">
-                            <form class="custom-form comment-form" action="#" method="post" role="form">
-                                {% csrf_token %}
-
-                                <textarea class="form-control" rows="5" id="comment" name="comment" placeholder="Write a comment" required></textarea>
-
-                                <div class="col-lg-3 col-4 mx-auto">
-                                    <button type="submit" class="form-control" id="subscribe">Submit</button>
-                                </div>
-                            </form>
-                            
-                            {% for i in comments %}
-                                <div class="news-author d-flex flex-wrap align-items-center">
-                                    <img src="{% static 'avatar-photo-default-user-icon-600nw-2345549599.webp' %}" class="img-fluid news-author-image" alt="">
-                                    <div class="ms-4 w-50">
-                                        <p class="mb-2">{{ i.comment }}</p>
-                                        <a href="#">{{ i.user.username }}</a>
-                                    </div>
-                                    <span class="ms-auto">{{ i.created_at|date:"d M Y" }}</span>
-                                </div>
-                            {% endfor %}
-        
-                        </div>
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <h1>{{ news.title }}</h1>
+                        <p>{{ news.content }}</p>
                     </div>
+        
+                    <div class="col-lg-7 col-12 mx-auto">
+                        <h4 class="text-center mb-4" style="font-size: xx-large;">Comments</h4>
+    
+                        {% if request.user.is_authenticated %}
+
+                        <form class="custom-form comment-form" method="post">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <div class="col-lg-3 col-4 mx-auto">
+                                <button type="submit" class="form-control" id="subscribe">Submit</button>
+                            </div>
+                        </form>
+
+                        {% else %}
+
+                        <form class="custom-form comment-form" method="post">
+                            <div class="col-lg-3 col-4 mx-auto">
+                                <h5>Login first!</h5>
+                            </div>
+                        </form>
+
+                        {% endif %}
+
+                    {% for comment in news.comments.all %}
+                        <div class="news-author d-flex flex-wrap align-items-center">
+                            <img src="{% static 'images/avatar/avatar-photo-default-user-icon-600nw-2345549599 (1).webp' %}" class="img-fluid news-author-image" alt="">
+                            <div class="ms-4 w-50">
+                                <h3 class="mb-2" style="font-size: large;" >{{ comment.user.username }}</h3>
+                                <h3 href="#" style="color: black; font-size: large;">{{ comment.comment}}</h3>
+                            </div>
+                            <span class="ms-auto">{{ comment.created_at|date:"d M Y" }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-center">Kommentlar yo'q. Birinchi bo'ling!</p>
+                    {% endfor %}
                 </div>
-        </section>
+            </div>
+        </section>      
 
         <section class="related-news section-padding bg-white">
                 <div class="container">
